@@ -123,7 +123,7 @@ const sk=()=>U?'sova_u_'+U.toLowerCase():'sova';
 const blank=()=>({k:{},h:{},xp:0,st:0,last:''});
 let S=blank();
 const loadS=()=>{S=blank();try{Object.assign(S,JSON.parse(localStorage.getItem(sk())||'{}'))}catch(e){}};loadS();
-const save=()=>{try{localStorage.setItem(sk(),JSON.stringify(S))}catch(e){}};
+const save=()=>{try{localStorage.setItem(sk(),JSON.stringify(S))}catch(e){}push()};
 const day=n=>new Date(Date.now()-n*864e5).toDateString();
 const daily=()=>{if(S.last!==day(0)){S.st=S.last===day(1)?S.st+1:1;S.last=day(0);save()}};daily();
 const sh=a=>[...a].sort(()=>Math.random()-.5);
@@ -165,6 +165,11 @@ const d=Q[0];
 $('v').innerHTML=bar+`<p class="mut" style="margin:16px 0 12px">Осталось ${Q.length}. Назови состав вслух, потом переверни карточку.</p>
 <div class="card" onclick="rev=1;learn()"><div class="mut" style="font-size:13px;margin-bottom:8px">${C[d.c][0]}</div><div class="serif" style="font-size:30px;line-height:1.15;margin-bottom:18px">${d.n}</div>${rev?d.i.map((x,k)=>`<div class="li" onclick="event.stopPropagation();find(${k})">${x}${cnt(x)}</div>`).join('')+(d.df?`<p class="df" style="display:block;margin-top:14px">${d.df}</p>`:'')+'<div class="mut" style="font-size:12px;margin-top:10px">Нажми на ингредиент, чтобы найти все блюда с ним</div>':'<div class="mut">Нажми, чтобы увидеть состав</div>'}</div>
 ${rev?`<div style="display:flex;gap:10px;margin-top:16px"><button class="b o" style="flex:1" onclick="S.h[${d.id}]=1;save();Q.push(Q.shift());rev=0;head();learn()">Ещё раз</button><button class="b" style="flex:1" onclick="S.k[${d.id}]=1;delete S.h[${d.id}];gain(5);Q.shift();rev=0;learn()">Знаю</button></div>`:''}`}
+var DB=null,pt=0;
+try{claude.use('db').then(d=>{DB=d;if(U)pull()}).catch(()=>{})}catch(e){}
+function ek(u){return'u'+[...new TextEncoder().encode(u.toLowerCase())].map(b=>b.toString(16).padStart(2,'0')).join('')}
+function push(){if(!U||!DB)return;clearTimeout(pt);const k=ek(U);pt=setTimeout(()=>{if(U&&DB&&ek(U)==k)DB.doc('progress/'+k).set(JSON.parse(JSON.stringify(S))).catch(()=>{})},700)}
+async function pull(){try{const d=await DB.doc('progress/'+ek(U)).get();if(d.exists){S=Object.assign(blank(),d.data());try{localStorage.setItem(sk(),JSON.stringify(S))}catch(e){}daily();head();if(!G)go(tab)}}catch(e){}}
 let G=null,am='in';
 const fq=x=>D.filter(e=>e.i.includes(x)).length;
 function gtq(){G.tot=G.dk.length;if(G.n>=G.dk.length)return;const d=G.dk[G.n],K=G.dk;G.d=d;G.ord=sh(d.i).sort((a,b)=>fq(a)-fq(b));G.sh=Math.min(3,d.i.length);
@@ -201,20 +206,25 @@ if(ok){G.s++;G.x+=8;gain(8)}else{S.h[d.id]=1;save()}gord()}
 
 const hx=async(p,s)=>{const e=new TextEncoder(),k=await crypto.subtle.importKey('raw',e.encode(p),'PBKDF2',false,['deriveBits']),b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:e.encode(s),iterations:100000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')};
 function auth(m){if(m)am=m;const r=am=='up',i='style="margin:6px 0"';
-$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default;text-align:left"><div class="serif" style="font-size:28px;text-align:center">${r?'Регистрация':'Вход'}</div><p class="mut" style="text-align:center">${r?'Твой текущий прогресс сохранится в аккаунте.':'Прогресс аккаунта подгрузится.'}</p><input id="au" placeholder="Логин" autocomplete="username" ${i}><input id="ap" type="password" placeholder="Пароль" autocomplete="${r?'new-password':'current-password'}" ${i}>${r?'<input id="ap2" type="password" placeholder="Повтори пароль" autocomplete="new-password" '+i+'>':''}<div id="ae" style="color:#C0563F;min-height:24px;font-size:14px"></div><button class="b" style="width:100%" onclick="authGo()">${r?'Создать аккаунт':'Войти'}</button><button class="b o" style="width:100%;margin-top:10px" onclick="auth('${r?'in':'up'}')">${r?'У меня уже есть аккаунт':'Создать аккаунт'}</button></div>`}
-async function authGo(){const u=$('au').value.trim(),p=$('ap').value,e=t=>{$('ae').textContent=t},key=u.toLowerCase();
+$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default;text-align:left"><div class="serif" style="font-size:28px;text-align:center">${r?'Регистрация':'Вход'}</div><p class="mut" style="text-align:center">${r?'Твой текущий прогресс сохранится в аккаунте, а войти можно с любого телефона.':'Прогресс аккаунта подгрузится.'}</p><input id="au" placeholder="Логин" autocomplete="username" ${i}><input id="ap" type="password" placeholder="Пароль" autocomplete="${r?'new-password':'current-password'}" ${i}>${r?'<input id="ap2" type="password" placeholder="Повтори пароль" autocomplete="new-password" '+i+'>':''}<div id="ae" style="color:#C0563F;min-height:24px;font-size:14px"></div><button class="b" style="width:100%" onclick="authGo()">${r?'Создать аккаунт':'Войти'}</button><button class="b o" style="width:100%;margin-top:10px" onclick="auth('${r?'in':'up'}')">${r?'У меня уже есть аккаунт':'Создать аккаунт'}</button></div>`}
+async function authGo(){const u=$('au').value.trim(),p=$('ap').value,e=t=>{$('ae').textContent=t},key=ek(u);
 if(!/^[\wа-яё.-]{3,20}$/i.test(u))return e('Логин: 3–20 символов, буквы, цифры, точка, дефис');
 if(p.length<6)return e('Пароль не короче 6 символов');
 if(!window.crypto||!crypto.subtle)return e('Браузер не поддерживает безопасный вход');
-let us={};try{us=JSON.parse(localStorage.getItem('sova_users')||'{}')}catch(x){}
-if(am=='up'){if(p!=$('ap2').value)return e('Пароли не совпадают');if(us[key])return e('Такой логин уже занят');
-const sl=[...crypto.getRandomValues(new Uint8Array(16))].join('-');us[key]={n:u,s:sl,h:await hx(p,sl)};
-try{localStorage.setItem('sova_users',JSON.stringify(us));localStorage.setItem('sova_u_'+key,JSON.stringify(S))}catch(x){return e('Не удалось сохранить аккаунт')}
-U=u;try{localStorage.setItem('sova_cur',U)}catch(x){}}
-else{const a=us[key];if(!a||a.h!=await hx(p,a.s))return e('Неверный логин или пароль');
-U=a.n;try{localStorage.setItem('sova_cur',U)}catch(x){}loadS()}
+if(!DB)return e('Облачный вход недоступен. Открой страницу по ссылке в приложении Claude и войди в свой аккаунт Claude.');
+e('Подожди секунду…');
+try{const acc=DB.doc('accounts/'+key);
+if(am=='up'){if(p!=$('ap2').value)return e('Пароли не совпадают');
+const l=await acc.acquire({holder:crypto.randomUUID?crypto.randomUUID():String(Math.random()),ttlMs:5000});if(!l.acquired)return e('Логин занят');
+const sn=await acc.get();if(sn.exists&&sn.data().h)return e('Логин «'+u+'» уже занят, придумай другой');
+const sl=[...crypto.getRandomValues(new Uint8Array(16))].join('-');await acc.set({n:u,s:sl,h:await hx(p,sl)});
+await DB.doc('progress/'+key).set(JSON.parse(JSON.stringify(S)));U=u}
+else{const sn=await acc.get(),a=sn.exists&&sn.data();if(!a||!a.h||a.h!=await hx(p,a.s))return e('Неверный логин или пароль');
+const pd=await DB.doc('progress/'+key).get();U=a.n;S=Object.assign(blank(),pd.exists?pd.data():{})}
+}catch(x){return e(x&&x.code=='invalid_argument'?'Нет прав записи. Попроси владельца страницы дать тебе доступ «Участник».':'Нет связи, попробуй ещё раз')}
+try{localStorage.setItem('sova_cur',U);localStorage.setItem(sk(),JSON.stringify(S))}catch(x){}
 Q=[];Z=null;daily();head();go('m')}
-function out(){U=null;try{localStorage.removeItem('sova_cur')}catch(e){}loadS();Q=[];Z=null;daily();head();go('m')}
+function out(){if(U&&DB){clearTimeout(pt);DB.doc('progress/'+ek(U)).set(JSON.parse(JSON.stringify(S))).catch(()=>{})}U=null;try{localStorage.removeItem('sova_cur')}catch(e){}loadS();Q=[];Z=null;daily();head();go('m')}
 const kn=()=>D.filter(x=>S.k[x.id]);
 const gate=m=>`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:28px">Сначала выучи</div><p class="mut">${m} только про выученные блюда. Сейчас выучено ${kn().length}, нужно минимум 4.</p><div style="display:flex;gap:10px;justify-content:center"><button class="b" onclick="go('l')">Зубрить</button><button class="b o" onclick="go('m')">В меню</button></div></div>`;
 const allIng=d=>D.flatMap(e=>e.i).filter(i=>!d.i.includes(i));
