@@ -167,14 +167,14 @@ $('v').innerHTML=bar+`<p class="mut" style="margin:16px 0 12px">Осталось
 ${rev?`<div style="display:flex;gap:10px;margin-top:16px"><button class="b o" style="flex:1" onclick="S.h[${d.id}]=1;save();Q.push(Q.shift());rev=0;head();learn()">Ещё раз</button><button class="b" style="flex:1" onclick="S.k[${d.id}]=1;delete S.h[${d.id}];gain(5);Q.shift();rev=0;learn()">Знаю</button></div>`:''}`}
 var DB=null,pt=0;
 // НАСТРОЙКА ДЛЯ GITHUB PAGES: впиши сюда projectId и apiKey из Firebase (Project settings, Your apps, Web)
-const CFG={projectId:'sovabase-d65d4',apiKey:'AIzaSyC6fR8kq9cE8hPSml4Fi4f3vwuQ1G8JcZM'};
+const CFG={projectId:'default-37684',apiKey:'AIzaSyCpFRXOky_5zTFzs0OnjcD5Lg_jPMwU6N8'};
 function mkFB(){const B='https://firestore.googleapis.com/v1/projects/'+CFG.projectId+'/databases/(default)/documents/',K='key='+CFG.apiKey,H={'Content-Type':'application/json'};
-const er=()=>{const e=new Error('fb');e.code='unavailable';return e},pg=p=>p.startsWith('progress/'),
+const er=async r=>{let j={};try{j=await r.json()}catch(x){}const e=new Error('fb');e.code='http';e.http=r.status;e.detail=(j.error&&(j.error.status+': '+j.error.message))||'';return e},pg=p=>p.startsWith('progress/'),
 bd=d=>JSON.stringify({fields:Object.fromEntries(Object.entries(d).map(([k,v])=>[k,{stringValue:String(v)}]))});
 return{doc:p=>({
-get:async()=>{const r=await fetch(B+p+'?'+K);if(r.status==404)return{exists:false,data:()=>undefined};if(!r.ok)throw er();const j=(await r.json()).fields||{},o={};for(const k in j)o[k]=j[k].stringValue;const v=pg(p)?JSON.parse(o.j||'{}'):o;return{exists:true,data:()=>v}},
-set:async d=>{const r=await fetch(B+p+'?'+K,{method:'PATCH',headers:H,body:bd(pg(p)?{j:JSON.stringify(d)}:d)});if(!r.ok)throw er()},
-create:async d=>{const [c,id]=p.split('/'),r=await fetch(B+c+'?documentId='+id+'&'+K,{method:'POST',headers:H,body:bd(d)});if(r.status==409)return false;if(!r.ok)throw er();return true}})}}
+get:async()=>{const r=await fetch(B+p+'?'+K);if(r.status==404)return{exists:false,data:()=>undefined};if(!r.ok)throw await er(r);const j=(await r.json()).fields||{},o={};for(const k in j)o[k]=j[k].stringValue;const v=pg(p)?JSON.parse(o.j||'{}'):o;return{exists:true,data:()=>v}},
+set:async d=>{const r=await fetch(B+p+'?'+K,{method:'PATCH',headers:H,body:bd(pg(p)?{j:JSON.stringify(d)}:d)});if(!r.ok)throw await er(r)},
+create:async d=>{const [c,id]=p.split('/'),r=await fetch(B+c+'?documentId='+id+'&'+K,{method:'POST',headers:H,body:bd(d)});if(r.status==409)return false;if(!r.ok)throw await er(r);return true}})}}
 (async()=>{let d=null;try{d=await claude.use('db')}catch(e){}if(!d&&CFG.projectId&&CFG.apiKey)d=mkFB();DB=d;if(DB&&U)pull()})();
 function ek(u){return'u'+[...new TextEncoder().encode(u.toLowerCase())].map(b=>b.toString(16).padStart(2,'0')).join('')}
 function push(){if(!U||!DB)return;clearTimeout(pt);const k=ek(U);pt=setTimeout(()=>{if(U&&DB&&ek(U)==k)DB.doc('progress/'+k).set(JSON.parse(JSON.stringify(S))).catch(()=>{})},700)}
@@ -230,7 +230,7 @@ else{const l=await acc.acquire({holder:crypto.randomUUID?crypto.randomUUID():Str
 await DB.doc('progress/'+key).set(JSON.parse(JSON.stringify(S)));U=u}
 else{const sn=await acc.get(),a=sn.exists&&sn.data();if(!a||!a.h||a.h!=await hx(p,a.s))return e('Неверный логин или пароль');
 const pd=await DB.doc('progress/'+key).get();U=a.n;S=Object.assign(blank(),pd.exists?pd.data():{})}
-}catch(x){return e(x&&x.code=='invalid_argument'?'Нет прав записи. Попроси владельца страницы дать тебе доступ «Участник».':'Нет связи, попробуй ещё раз')}
+}catch(x){const h=x&&x.http,d=x&&x.detail?' ['+x.detail+']':'';return e(x&&x.code=='invalid_argument'?'Нет прав записи. Попроси владельца страницы дать тебе доступ «Участник».':h==403?'Firebase отказал в доступе (403). Проверь, что правила Firestore опубликованы, а ключ apiKey верный.'+d:h==404?'База Firestore не найдена (404). Создай Firestore Database в проекте и проверь projectId.'+d:h==400?'Firebase не принял запрос (400). Проверь apiKey и projectId.'+d:x instanceof TypeError?'Нет доступа к Firebase. Проверь интернет или отключи блокировщик рекламы для этого сайта.':'Нет связи ('+((x&&(x.code||x.message))||'ошибка')+'), попробуй ещё раз')}
 try{localStorage.setItem('sova_cur',U);localStorage.setItem(sk(),JSON.stringify(S))}catch(x){}
 Q=[];Z=null;daily();head();go('m')}
 function out(){if(U&&DB){clearTimeout(pt);DB.doc('progress/'+ek(U)).set(JSON.parse(JSON.stringify(S))).catch(()=>{})}U=null;try{localStorage.removeItem('sova_cur')}catch(e){}loadS();Q=[];Z=null;daily();head();go('m')}
