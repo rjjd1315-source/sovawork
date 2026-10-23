@@ -118,11 +118,14 @@ D.forEach(d=>{const t=(d.n+' '+d.i.join(' ')).toLowerCase();d.a=Object.keys(A).f
 D.forEach(d=>{let b=0,o=null;const a=new Set(d.i.map(x=>x.toLowerCase()));D.forEach(e=>{if(e.id==d.id)return;const s=new Set(e.i.map(x=>x.toLowerCase()));const n=[...a].filter(x=>s.has(x)).length,j=n/(a.size+s.size-n);if(j>b){b=j;o=e}});
 if(o&&b>=.45){const s=new Set(o.i.map(x=>x.toLowerCase())),ad=[...a].filter(x=>!s.has(x)),rm=[...s].filter(x=>!a.has(x));d.df='Не путай с «'+o.n+'»: '+(ad.length&&rm.length?'здесь '+ad.join(', ')+', а не '+rm.join(', ')+'.':ad.length?'здесь добавлено: '+ad.join(', ')+'.':'здесь нет: '+rm.join(', ')+'.')}});
 const L=['Птенец','Совёнок','Бариста','Ночная сова','Мудрая сова','Легенда смены'];
-let S={k:{},h:{},xp:0,st:0,last:''};
-try{Object.assign(S,JSON.parse(localStorage.getItem('sova')||'{}'))}catch(e){}
-const save=()=>{try{localStorage.setItem('sova',JSON.stringify(S))}catch(e){}};
+let U=null;try{U=localStorage.getItem('sova_cur')||null}catch(e){}
+const sk=()=>U?'sova_u_'+U.toLowerCase():'sova';
+const blank=()=>({k:{},h:{},xp:0,st:0,last:''});
+let S=blank();
+const loadS=()=>{S=blank();try{Object.assign(S,JSON.parse(localStorage.getItem(sk())||'{}'))}catch(e){}};loadS();
+const save=()=>{try{localStorage.setItem(sk(),JSON.stringify(S))}catch(e){}};
 const day=n=>new Date(Date.now()-n*864e5).toDateString();
-if(S.last!==day(0)){S.st=S.last===day(1)?S.st+1:1;S.last=day(0);save()}
+const daily=()=>{if(S.last!==day(0)){S.st=S.last===day(1)?S.st+1:1;S.last=day(0);save()}};daily();
 const sh=a=>[...a].sort(()=>Math.random()-.5);
 const ing=d=>d.i.join(', ');
 const $=id=>document.getElementById(id);
@@ -136,7 +139,7 @@ const DIA='<svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="c
 const ck=on=>'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2l10 10-10 10L2 12z" style="fill:'+(on?'var(--acc)':'none')+';stroke:'+(on?'var(--acc)':'var(--line)')+'"/>'+(on?'<path d="M8 12.2l3 3 5-6" style="stroke:var(--accT)" stroke-width="2"/>':'')+'</svg>';
 const cnt=x=>{const n=D.filter(e=>e.i.some(y=>y.toLowerCase()==x.toLowerCase())).length;return n>1?' <span class="mut" style="font-size:12px">ещё в '+(n-1)+'</span>':''};
 function head(){const l=Math.min(5,S.xp/100|0),n=Object.keys(S.k).length;
-$('h').innerHTML=`<div class="pat"></div><div class="brand" onclick="th()"><div class="emb"></div><div class="serif" style="font-size:34px;line-height:1.1;letter-spacing:.08em">Сова</div><div class="mut" style="font-size:13px">кофейня и кухня, академия составов</div><div class="st">${L[l]}, серия ${S.st} дн</div></div><div class="prog"><i style="width:${n/D.length*100}%"></i></div><div class="mut" style="font-size:12px;margin-top:6px;text-align:center">Выучено ${n} из ${D.length}, опыт ${S.xp}</div>`}
+$('h').innerHTML=`<div class="pat"></div><div class="brand" onclick="th()"><div class="emb"></div><div class="serif" style="font-size:34px;line-height:1.1;letter-spacing:.08em">Сова</div><div class="mut" style="font-size:13px">кофейня и кухня, академия составов</div><div class="st">${L[l]}, серия ${S.st} дн</div></div><div style="text-align:center;margin-top:10px">${U?'<span class="mut">'+U+'</span> <button class="sw" style="margin-left:8px" onclick="out()">Выйти</button>':'<button class="sw" style="margin:0" onclick="auth()">Войти или создать аккаунт</button>'}</div><div class="prog"><i style="width:${n/D.length*100}%"></i></div><div class="mut" style="font-size:12px;margin-top:6px;text-align:center">Выучено ${n} из ${D.length}, опыт ${S.xp}</div>`}
 function th(){const r=document.documentElement,d=r.dataset.theme?r.dataset.theme=='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=d?'light':'dark'}
 function gain(n){S.xp+=n;save();head()}
 function go(t){if(G&&G.iv){clearInterval(G.iv);G=null}tab=t;document.querySelectorAll('nav button').forEach((b,i)=>b.classList.toggle('on','mlqg'[i]==t));scrollTo(0,0);({m:menu,l:learn,q:qz,g:gm})[t]()}
@@ -162,51 +165,101 @@ const d=Q[0];
 $('v').innerHTML=bar+`<p class="mut" style="margin:16px 0 12px">Осталось ${Q.length}. Назови состав вслух, потом переверни карточку.</p>
 <div class="card" onclick="rev=1;learn()"><div class="mut" style="font-size:13px;margin-bottom:8px">${C[d.c][0]}</div><div class="serif" style="font-size:30px;line-height:1.15;margin-bottom:18px">${d.n}</div>${rev?d.i.map((x,k)=>`<div class="li" onclick="event.stopPropagation();find(${k})">${x}${cnt(x)}</div>`).join('')+(d.df?`<p class="df" style="display:block;margin-top:14px">${d.df}</p>`:'')+'<div class="mut" style="font-size:12px;margin-top:10px">Нажми на ингредиент, чтобы найти все блюда с ним</div>':'<div class="mut">Нажми, чтобы увидеть состав</div>'}</div>
 ${rev?`<div style="display:flex;gap:10px;margin-top:16px"><button class="b o" style="flex:1" onclick="S.h[${d.id}]=1;save();Q.push(Q.shift());rev=0;head();learn()">Ещё раз</button><button class="b" style="flex:1" onclick="S.k[${d.id}]=1;delete S.h[${d.id}];gain(5);Q.shift();rev=0;learn()">Знаю</button></div>`:''}`}
-let G=null;
+let G=null,am='in';
+const fq=x=>D.filter(e=>e.i.includes(x)).length;
+function gtq(){G.tot=G.dk.length;if(G.n>=G.dk.length)return;const d=G.dk[G.n],K=G.dk;G.d=d;G.ord=sh(d.i).sort((a,b)=>fq(a)-fq(b));G.sh=Math.min(3,d.i.length);
+const o=[...sh(K.filter(x=>x.id!=d.id&&x.c==d.c)),...sh(K.filter(x=>x.id!=d.id&&x.c!=d.c))].slice(0,3);G.o=sh([d,...o]);G.res=0;G.pk=-1}
+const gtpts=()=>Math.max(2,10-2*(G.sh-3));
+function gtri(){
+if(G.n>=G.dk.length)return gend('Угадай по трём');
+const d=G.d,pts=gtpts();
+$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Блюдо ${G.n+1} из ${G.dk.length}, верных ${G.s}</p><div style="margin:8px 0 14px"><div class="mut">Что это за блюдо? Награда: ${pts} опыта</div><div class="serif" style="font-size:23px;line-height:1.3;margin-top:6px">${G.ord.slice(0,G.sh).join(', ')}</div></div>${G.res||G.sh>=d.i.length?'':'<button class="b o" style="margin-bottom:8px" onclick="G.sh++;gtri()">Ещё подсказка</button>'}${G.o.map((o,k)=>`<button class="opt ${G.res?(o.id==d.id?'ok':k==G.pk?'no':''):''}" onclick="gtp(${k})"><i><b>${'АБВГ'[k]}</b></i>${o.n}</button>`).join('')}${G.res?`<div class="fb">${G.res>0?'Верно! +'+pts+' опыта.':'Это «'+d.n+'». Полный состав: '+ing(d)}</div><button class="b" onclick="G.n++;gtq();gtri()">Дальше</button>`:''}`}
+function gtp(k){if(G.res)return;G.pk=k;const d=G.d;if(G.o[k].id==d.id){const p=gtpts();G.res=1;G.s++;G.x+=p;gain(p)}else{G.res=-1;S.h[d.id]=1;save()}gtri()}
+
+const AN={'🥛':'молочное','🥚':'яйца','🐟':'рыба и морепродукты','🌰':'орехи и семена','🌾':'глютен'};
+const rmv=(d,a)=>d.i.filter(x=>A[a].test(x.toLowerCase()));
+function chunk(a,m){const n=a.length,g=Math.ceil(n/m),b=n/g|0,e=n%g,o=[];let i=0;for(let k=0;k<g;k++){const z=b+(k<e?1:0);o.push(a.slice(i,i+z));i+=z}return o}
+function galq(){if(G.gr&&G.gi>=G.tot)return;if(!G.gr){G.gr=chunk(G.dk,5);G.gi=0;G.tot=G.gr.length}
+const p=G.gr[G.gi],ks=Object.keys(A),mx=ks.filter(k=>{const n=p.filter(d=>!d.a.includes(k)).length;return n>0&&n<p.length});
+G.al=sh(mx.length?mx:ks)[0];G.p=p;G.sel=[];G.res=0}
+function galg(){
+if(G.gi>=G.tot)return gend('Гость с аллергией');
+const al=G.al;
+$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Гость ${G.gi+1} из ${G.tot}, верных ${G.s}</p><div style="margin:8px 0 14px"><div class="mut">Аллергия у гостя</div><div class="serif" style="font-size:28px;line-height:1.15">${AN[al]}</div><div class="mut" style="margin-top:6px">Отметь все блюда, которые ему можно. Если таких нет, жми «Проверить».</div></div>${G.p.map(d=>{const s=G.sel.includes(d.id),sf=!d.a.includes(al),cl=G.res?(s?(sf?'ok':'no'):(sf?'miss':'')):'';
+return `<button class="opt ${cl}" style="display:block;${s&&!G.res?'border-color:var(--acc);border-width:2px;':''}" onclick="galp(${d.id})">${d.n}${G.res&&!sf?'<div style="font-size:13px;font-weight:400">содержит: '+(rmv(d,al).join(', ')||'по названию')+'</div>':''}</button>`}).join('')}${G.res?`<div class="fb">${G.res>0?'Верно!':'Есть ошибки. Красным отмечены выбранные блюда с аллергеном, пунктиром пропущенные безопасные.'}</div><button class="b" onclick="G.gi++;galq();galg()">Дальше</button>`:'<button class="b" style="margin-top:8px" onclick="galc()">Проверить</button>'}`}
+function galp(id){if(G.res)return;const k=G.sel.indexOf(id);k<0?G.sel.push(id):G.sel.splice(k,1);galg()}
+function galc(){if(G.res)return;const ok=G.p.every(d=>G.sel.includes(d.id)==!d.a.includes(G.al));G.res=ok?1:-1;
+if(ok){G.s++;G.x+=10;gain(10)}else{G.p.forEach(d=>{if(G.sel.includes(d.id)==d.a.includes(G.al))S.h[d.id]=1});save()}galg()}
+function goq2(){G.tot=G.dk.length;if(G.n>=G.dk.length)return;const d=G.dk[G.n],ks=Object.keys(A),c=ks.filter(k=>rmv(d,k).length);G.d=d;G.al=sh(c.length?c:ks)[0];G.rm=rmv(d,G.al);G.sel=[];G.res=0}
+function gord(){
+if(G.n>=G.dk.length)return gend('Принять заказ');
+const d=G.d;
+$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Заказ ${G.n+1} из ${G.dk.length}, верных ${G.s}</p><div style="margin:8px 0 14px"><div class="mut">Гость заказал</div><div class="serif" style="font-size:26px;line-height:1.15">${d.n}</div><div class="mut" style="margin-top:8px">Аллергия: ${AN[G.al]}. Что убрать или заменить? Если ничего, жми «Проверить».</div></div><div>${d.i.map((x,i)=>{const r=G.rm.includes(x),s=G.sel.includes(i);return `<button class="ch ${G.res?(s?(r?'ok':'no'):(r?'miss':'')):(s?'on':'')}" onclick="gorp(${i})">${x}</button>`}).join('')}</div>${G.res?`<div class="fb">${G.res>0?'Верно!':(G.rm.length?'Нужно было убрать: '+G.rm.join(', ')+'.':'В этом блюде ничего убирать не нужно.')}</div><button class="b" onclick="G.n++;goq2();gord()">Дальше</button>`:'<button class="b" style="margin-top:16px" onclick="gorc()">Проверить</button>'}`}
+function gorp(i){if(G.res)return;const k=G.sel.indexOf(i);k<0?G.sel.push(i):G.sel.splice(k,1);gord()}
+function gorc(){if(G.res)return;const d=G.d,ok=d.i.every((x,i)=>G.sel.includes(i)==G.rm.includes(x));G.res=ok?1:-1;
+if(ok){G.s++;G.x+=8;gain(8)}else{S.h[d.id]=1;save()}gord()}
+
+const hx=async(p,s)=>{const e=new TextEncoder(),k=await crypto.subtle.importKey('raw',e.encode(p),'PBKDF2',false,['deriveBits']),b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:e.encode(s),iterations:100000,hash:'SHA-256'},k,256);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')};
+function auth(m){if(m)am=m;const r=am=='up',i='style="margin:6px 0"';
+$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default;text-align:left"><div class="serif" style="font-size:28px;text-align:center">${r?'Регистрация':'Вход'}</div><p class="mut" style="text-align:center">${r?'Твой текущий прогресс сохранится в аккаунте.':'Прогресс аккаунта подгрузится.'}</p><input id="au" placeholder="Логин" autocomplete="username" ${i}><input id="ap" type="password" placeholder="Пароль" autocomplete="${r?'new-password':'current-password'}" ${i}>${r?'<input id="ap2" type="password" placeholder="Повтори пароль" autocomplete="new-password" '+i+'>':''}<div id="ae" style="color:#C0563F;min-height:24px;font-size:14px"></div><button class="b" style="width:100%" onclick="authGo()">${r?'Создать аккаунт':'Войти'}</button><button class="b o" style="width:100%;margin-top:10px" onclick="auth('${r?'in':'up'}')">${r?'У меня уже есть аккаунт':'Создать аккаунт'}</button></div>`}
+async function authGo(){const u=$('au').value.trim(),p=$('ap').value,e=t=>{$('ae').textContent=t},key=u.toLowerCase();
+if(!/^[\wа-яё.-]{3,20}$/i.test(u))return e('Логин: 3–20 символов, буквы, цифры, точка, дефис');
+if(p.length<6)return e('Пароль не короче 6 символов');
+if(!window.crypto||!crypto.subtle)return e('Браузер не поддерживает безопасный вход');
+let us={};try{us=JSON.parse(localStorage.getItem('sova_users')||'{}')}catch(x){}
+if(am=='up'){if(p!=$('ap2').value)return e('Пароли не совпадают');if(us[key])return e('Такой логин уже занят');
+const sl=[...crypto.getRandomValues(new Uint8Array(16))].join('-');us[key]={n:u,s:sl,h:await hx(p,sl)};
+try{localStorage.setItem('sova_users',JSON.stringify(us));localStorage.setItem('sova_u_'+key,JSON.stringify(S))}catch(x){return e('Не удалось сохранить аккаунт')}
+U=u;try{localStorage.setItem('sova_cur',U)}catch(x){}}
+else{const a=us[key];if(!a||a.h!=await hx(p,a.s))return e('Неверный логин или пароль');
+U=a.n;try{localStorage.setItem('sova_cur',U)}catch(x){}loadS()}
+Q=[];Z=null;daily();head();go('m')}
+function out(){U=null;try{localStorage.removeItem('sova_cur')}catch(e){}loadS();Q=[];Z=null;daily();head();go('m')}
 const kn=()=>D.filter(x=>S.k[x.id]);
 const gate=m=>`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:28px">Сначала выучи</div><p class="mut">${m} только про выученные блюда. Сейчас выучено ${kn().length}, нужно минимум 4.</p><div style="display:flex;gap:10px;justify-content:center"><button class="b" onclick="go('l')">Зубрить</button><button class="b o" onclick="go('m')">В меню</button></div></div>`;
 const allIng=d=>D.flatMap(e=>e.i).filter(i=>!d.i.includes(i));
 function gm(){
 if(!G){
 if(kn().length<4){$('v').innerHTML=gate('Игры спрашивают');return}
-$('v').innerHTML='<p class="mut" style="margin:24px 0 4px">Короткие игры на выученных блюдах. За победы идёт опыт.</p>'+[['odd','Лишний ингредиент','В составе спрятан чужой ингредиент. Найди его. 8 раундов.'],['tf','Верно или нет','Блиц на 45 секунд: есть ли ингредиент в блюде?'],['pair','Найди пару','Соедини название блюда с его составом.']].map(g=>`<button class="opt" style="display:block;margin:12px 0;padding:18px" onclick="gs('${g[0]}')"><div class="serif" style="font-size:20px">${g[1]}</div><div class="mut" style="font-weight:400;margin-top:2px">${g[2]}</div></button>`).join('');return}
-G.t=='odd'?godd():G.t=='tf'?gtf():gpr()}
-function gs(t){G={t,n:0,s:0,x:0,res:0};
-if(t=='tf'){G.left=45;G.iv=setInterval(()=>{G.left--;const e=$('tm');if(e)e.textContent=G.left;if(G.left<=0){clearInterval(G.iv);G.end=1;gm()}},1000);gtfq()}else if(t=='odd')goq();else gpq();gm()}
-function goq(){const d=sh(kn())[0],x=sh(allIng(d))[0];G.d=d;G.bad=x;G.list=sh([...sh(d.i).slice(0,7),x]);G.res=0;G.pk=''}
+$('v').innerHTML='<p class="mut" style="margin:24px 0 4px">Короткие игры на выученных блюдах. За победы идёт опыт.</p>'+[['odd','Лишний ингредиент','В составе спрятан чужой ингредиент. Найди его. Один раунд на каждое выученное блюдо.'],['tf','Верно или нет','Блиц: есть ли ингредиент в блюде? По вопросу на каждое выученное блюдо, 6 секунд на вопрос.'],['pair','Найди пару','Соедини название блюда с его составом. Все выученные блюда по группам, без повторов.'],['alg','Гость с аллергией','Гость называет аллерген. Отметь все блюда, которые ему можно.'],['ord','Принять заказ','У гостя аллергия. Выбери, что убрать или заменить в блюде.'],['tri','Угадай по трём','Три ингредиента и четыре варианта. Каждая лишняя подсказка снижает награду.']].map(g=>`<button class="opt" style="display:block;margin:12px 0;padding:18px" onclick="gs('${g[0]}')"><div class="serif" style="font-size:20px">${g[1]}</div><div class="mut" style="font-weight:400;margin-top:2px">${g[2]}</div></button>`).join('');return}
+G.t=='odd'?godd():G.t=='tf'?gtf():G.t=='alg'?galg():G.t=='ord'?gord():G.t=='tri'?gtri():gpr()}
+function gs(t){G={t,n:0,s:0,x:0,res:0,err:0,tot:0,dk:sh(kn())};
+if(t=='tf'){G.left=Math.max(30,G.dk.length*6);G.iv=setInterval(()=>{G.left--;const e=$('tm');if(e)e.textContent=G.left;if(G.left<=0){clearInterval(G.iv);G.end=1;gm()}},1000);gtfq()}else if(t=='odd')goq();else if(t=='alg')galq();else if(t=='ord')goq2();else if(t=='tri')gtq();else gpq();gm()}
+function goq(){if(G.n>=G.dk.length)return;const d=G.dk[G.n],x=sh(allIng(d))[0];G.d=d;G.bad=x;G.list=sh([...sh(d.i).slice(0,7),x]);G.res=0;G.pk=''}
 function godd(){
-if(G.n>=8)return gend('Лишний ингредиент');
+if(G.n>=G.dk.length)return gend('Лишний ингредиент');
 const d=G.d;
-$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Раунд ${G.n+1} из 8, верных ${G.s}</p><div style="margin:8px 0 14px"><div class="mut">Что лишнее в блюде</div><div class="serif" style="font-size:26px;line-height:1.15">${d.n}</div></div><div>${G.list.map((x,i)=>`<button class="ch ${G.res?(x==G.bad?'ok':x==G.pk?'no':''):''}" onclick="gopick(${i})">${x}</button>`).join('')}</div>${G.res?`<div class="fb">${G.res>0?'Верно!':'Лишним был ингредиент «'+G.bad+'»'}</div><button class="b" onclick="G.n++;goq();godd()">Дальше</button>`:''}`}
+$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Раунд ${G.n+1} из ${G.dk.length}, верных ${G.s}</p><div style="margin:8px 0 14px"><div class="mut">Что лишнее в блюде</div><div class="serif" style="font-size:26px;line-height:1.15">${d.n}</div></div><div>${G.list.map((x,i)=>`<button class="ch ${G.res?(x==G.bad?'ok':x==G.pk?'no':''):''}" onclick="gopick(${i})">${x}</button>`).join('')}</div>${G.res?`<div class="fb">${G.res>0?'Верно!':'Лишним был ингредиент «'+G.bad+'»'}</div><button class="b" onclick="G.n++;goq();godd()">Дальше</button>`:''}`}
 function gopick(i){if(G.res)return;const x=G.list[i];G.pk=x;G.res=x==G.bad?1:-1;if(G.res>0){G.s++;G.x+=8;gain(8)}else{S.h[G.d.id]=1;save()}godd()}
-function gtfq(){const d=sh(kn())[0],t=Math.random()<.5;G.d=d;G.ing=t?sh(d.i)[0]:sh(allIng(d))[0];G.tr=t}
+function gtfq(){if(G.n>=G.dk.length){clearInterval(G.iv);G.end=1;return}const d=G.dk[G.n],t=Math.random()<.5;G.d=d;G.ing=t?sh(d.i)[0]:sh(allIng(d))[0];G.tr=t}
 function gtf(){
 if(G.end)return gend('Верно или нет');
 $('v').innerHTML=`<div style="display:flex;justify-content:space-between;margin:24px 0 8px"><span class="mut">Верных: ${G.s}</span><span class="serif" style="font-size:24px"><span id="tm">${G.left}</span> с</span></div><div class="card" style="cursor:default;min-height:230px"><div class="mut">В блюде</div><div class="serif" style="font-size:26px;line-height:1.15;margin:4px 0 14px">${G.d.n}</div><div class="mut">есть ингредиент</div><div class="serif" style="font-size:24px;color:var(--acc)">${G.ing}?</div></div><div style="display:flex;gap:10px;margin-top:14px"><button class="b o" style="flex:1" onclick="gtfa(0)">Нет</button><button class="b" style="flex:1" onclick="gtfa(1)">Да</button></div>`}
-function gtfa(v){if(G.end)return;if((v==1)==G.tr){G.s++;G.x+=2;gain(2)}else{S.h[G.d.id]=1;save()}gtfq();gtf()}
-function gpq(){const K=sh(kn()),p=[];K.forEach(d=>{if(p.length<4&&!p.some(e=>e.c==d.c))p.push(d)});K.forEach(d=>{if(p.length<4&&!p.includes(d))p.push(d)});G.p=p;G.r=sh(p);G.done=[];G.sel=-1;G.err=0}
+function gtfa(v){if(G.end)return;if((v==1)==G.tr){G.s++;G.x+=2;gain(2)}else{S.h[G.d.id]=1;save()}G.n++;gtfq();gtf()}
+function gpq(){if(!G.gr){const N=G.dk.length,g=Math.ceil(N/4),b=N/g|0,e=N%g;G.gr=[];let i=0;for(let k=0;k<g;k++){const z=b+(k<e?1:0);G.gr.push(G.dk.slice(i,i+z));i+=z}G.gi=0}
+G.p=G.gr[G.gi];G.r=sh(G.p);G.done=[];G.sel=-1}
 function gpr(){
-if(G.done.length==4)return gend('Найди пару');
+const fin=G.done.length==G.p.length;if(fin&&G.gi+1>=G.gr.length)return gend('Найди пару');
 const side=(l,L)=>l.map(d=>{const dn=G.done.includes(d.id);return`<button class="opt ${dn?'ok':''}" style="display:block;margin:8px 0;${L&&G.sel==d.id?'border-color:var(--acc);border-width:2px;':''}${L?'':'font-size:13px;font-weight:400;'}" ${dn?'disabled':''} onclick="gpp(${d.id},${L?1:0})">${L?d.n:ing(d)}</button>`}).join('');
-$('v').innerHTML=`<p class="mut" style="margin:24px 0 8px">Выбери блюдо слева, потом его состав справа. Ошибок: ${G.err}</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div>${side(G.p,1)}</div><div>${side(G.r,0)}</div></div>`}
+$('v').innerHTML=`<p class="mut" style="margin:24px 0 8px">Раунд ${G.gi+1} из ${G.gr.length}. Выбери блюдо слева, потом его состав справа. Ошибок: ${G.err}</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div>${side(G.p,1)}</div><div>${side(G.r,0)}</div></div>${fin?'<button class="b" style="margin-top:14px" onclick="G.gi++;gpq();gpr()">Дальше</button>':''}`}
 function gpp(id,l){if(l){G.sel=id;gpr();return}if(G.sel<0)return;if(G.sel==id){G.done.push(id)}else{G.err++;S.h[G.sel]=1;save()}G.sel=-1;gpr()}
 function gend(nm){const t=G.t;let msg,xp=G.x;
-if(t=='odd')msg=G.s+' из 8';else if(t=='tf')msg=G.s+' верных за 45 секунд';else{xp=Math.max(5,15-G.err*3);msg=G.err?'Ошибок: '+G.err:'Без ошибок';if(!G.paid){G.paid=1;gain(xp)}}
+if(t=='odd')msg=G.s+' из '+G.dk.length;else if(t=='tf')msg=G.s+' из '+G.dk.length;else if(t=='alg'||t=='ord'||t=='tri')msg=G.s+' из '+G.tot;else{xp=Math.max(5,(G.dk.length-G.err)*3);msg=G.err?'Ошибок: '+G.err:'Без ошибок';if(!G.paid){G.paid=1;gain(xp)}}
 $('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default"><div class="mut">${nm}</div><div class="serif" style="font-size:40px;line-height:1.1;margin:6px 0">${msg}</div><p class="mut">Получено ${xp} опыта.</p><div style="display:flex;gap:10px;justify-content:center"><button class="b" onclick="gs('${t}')">Ещё раз</button><button class="b o" onclick="G=null;gm()">К играм</button></div></div>`}
 function nq(){
-if(Z.n<8){const K=D.filter(x=>S.k[x.id]),d=sh(K.filter(x=>!Z.d||x.id!=Z.d.id))[0];Z.d=d;Z.m=Z.n%2;Z.res=0;Z.sel=[];
+if(Z.n<Z.dk.length){const K=D.filter(x=>S.k[x.id]),d=Z.dk[Z.n];Z.d=d;Z.m=Z.n%2;Z.res=0;Z.sel=[];
 if(Z.m==0)Z.o=sh([d.id,...[...new Set(sh(K.filter(x=>x.id!=d.id&&x.c==d.c)).concat(sh(K)).filter(x=>x.id!=d.id).map(x=>x.id))].slice(0,3)]);
 else{const pool=[...new Set(D.flatMap(x=>x.i))].filter(x=>!d.i.includes(x));Z.c=sh([...d.i,...sh(pool).slice(0,5)])}}
 qz()}
 function qz(){
 if(!Z){const kn=Object.keys(S.k).length;
 if(kn<4){$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:30px">Сначала выучи</div><p class="mut">Квиз спрашивает только про выученные блюда. Сейчас выучено ${kn}, нужно минимум 4.</p><div style="display:flex;gap:10px;justify-content:center"><button class="b" onclick="go('l')">Зубрить</button><button class="b o" onclick="go('m')">В меню</button></div></div>`;return}
-$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:30px">Квиз на 8 вопросов</div><p class="mut">Вопросы только из выученных блюд (${kn}). Чередуем два режима: угадай блюдо по составу и собери состав из ингредиентов.</p><div><button class="b" onclick="Z={n:0,s:0,x:0};nq()">Начать</button></div></div>`;return}
-if(Z.n>=8){$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:52px">${Z.s} из 8</div><p class="mut">${Z.s>=7?'Отлично, ты знаешь меню':Z.s>=4?'Хороший результат, повтори слабые места':'Загляни в карточки и попробуй ещё раз'}. Получено ${Z.x} опыта.</p><div><button class="b" onclick="Z=null;qz()">Ещё раунд</button></div></div>`;return}
+$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:30px">Квиз на ${kn} вопросов</div><p class="mut">По одному вопросу на каждое выученное блюдо, без повторов. Чередуем два режима: угадай блюдо по составу и собери состав из ингредиентов.</p><div><button class="b" onclick="Z={n:0,s:0,x:0,dk:sh(D.filter(x=>S.k[x.id]))};nq()">Начать</button></div></div>`;return}
+if(Z.n>=Z.dk.length){$('v').innerHTML=`<div class="card" style="margin-top:24px;cursor:default"><div class="serif" style="font-size:52px">${Z.s} из ${Z.dk.length}</div><p class="mut">${Z.s/Z.dk.length>=.85?'Отлично, ты знаешь меню':Z.s/Z.dk.length>=.5?'Хороший результат, повтори слабые места':'Загляни в карточки и попробуй ещё раз'}. Получено ${Z.x} опыта.</p><div><button class="b" onclick="Z=null;qz()">Ещё раунд</button></div></div>`;return}
 const d=Z.d;let b='';
 if(Z.m==0)b=`<div style="margin:8px 0 14px"><div class="mut">Что это за блюдо?</div><div class="serif" style="font-size:23px;line-height:1.3;margin-top:6px">${ing(d)}</div></div>`+Z.o.map((o,k)=>`<button class="opt ${Z.res?(o==d.id?'ok':o==Z.p?'no':''):''}" onclick="ans(${o})"><i><b>${'АБВГ'[k]}</b></i>${D[o].n}</button>`).join('');
 else b=`<div style="margin:8px 0 14px"><div class="mut">Собери состав</div><div class="serif" style="font-size:28px;line-height:1.15">${d.n}</div></div><div>${Z.c.map((x,i)=>{const r=d.i.includes(x),s=Z.sel.includes(i);return`<button class="ch ${Z.res?(s?(r?'ok':'no'):(r?'miss':'')):(s?'on':'')}" onclick="pk(${i})">${x}</button>`}).join('')}</div>`+(Z.res?'':`<button class="b" style="margin-top:16px" onclick="chk()">Проверить</button>`);
-$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Вопрос ${Z.n+1} из 8, верных ${Z.s}</p>${b}${Z.res?`<div class="fb">${Z.res>0?'Верно!':'Не совсем. '+(Z.m?'Верный состав: '+ing(d):'Это «'+d.n+'»')}</div><button class="b" onclick="Z.n++;nq()">Дальше</button>`:''}`}
+$('v').innerHTML=`<p class="mut" style="margin:24px 0 0">Вопрос ${Z.n+1} из ${Z.dk.length}, верных ${Z.s}</p>${b}${Z.res?`<div class="fb">${Z.res>0?'Верно!':'Не совсем. '+(Z.m?'Верный состав: '+ing(d):'Это «'+d.n+'»')}</div><button class="b" onclick="Z.n++;nq()">Дальше</button>`:''}`}
 function ans(o){if(Z.res)return;Z.p=o;Z.res=o==Z.d.id?1:-1;if(Z.res>0){Z.s++;Z.x+=10;gain(10)}else{S.h[Z.d.id]=1;save()}qz()}
 function pk(i){if(Z.res)return;const k=Z.sel.indexOf(i);k<0?Z.sel.push(i):Z.sel.splice(k,1);qz()}
 function chk(){const d=Z.d,ok=Z.sel.filter(i=>d.i.includes(Z.c[i])).length,bad=Z.sel.length-ok;
