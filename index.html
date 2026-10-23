@@ -166,7 +166,16 @@ $('v').innerHTML=bar+`<p class="mut" style="margin:16px 0 12px">Осталось
 <div class="card" onclick="rev=1;learn()"><div class="mut" style="font-size:13px;margin-bottom:8px">${C[d.c][0]}</div><div class="serif" style="font-size:30px;line-height:1.15;margin-bottom:18px">${d.n}</div>${rev?d.i.map((x,k)=>`<div class="li" onclick="event.stopPropagation();find(${k})">${x}${cnt(x)}</div>`).join('')+(d.df?`<p class="df" style="display:block;margin-top:14px">${d.df}</p>`:'')+'<div class="mut" style="font-size:12px;margin-top:10px">Нажми на ингредиент, чтобы найти все блюда с ним</div>':'<div class="mut">Нажми, чтобы увидеть состав</div>'}</div>
 ${rev?`<div style="display:flex;gap:10px;margin-top:16px"><button class="b o" style="flex:1" onclick="S.h[${d.id}]=1;save();Q.push(Q.shift());rev=0;head();learn()">Ещё раз</button><button class="b" style="flex:1" onclick="S.k[${d.id}]=1;delete S.h[${d.id}];gain(5);Q.shift();rev=0;learn()">Знаю</button></div>`:''}`}
 var DB=null,pt=0;
-try{claude.use('db').then(d=>{DB=d;if(U)pull()}).catch(()=>{})}catch(e){}
+// НАСТРОЙКА ДЛЯ GITHUB PAGES: впиши сюда projectId и apiKey из Firebase (Project settings, Your apps, Web)
+const CFG={projectId:'sovabase-d65d4',apiKey:'AIzaSyC6fR8kq9cE8hPSml4Fi4f3vwuQ1G8JcZM'};
+function mkFB(){const B='https://firestore.googleapis.com/v1/projects/'+CFG.projectId+'/databases/(default)/documents/',K='key='+CFG.apiKey,H={'Content-Type':'application/json'};
+const er=()=>{const e=new Error('fb');e.code='unavailable';return e},pg=p=>p.startsWith('progress/'),
+bd=d=>JSON.stringify({fields:Object.fromEntries(Object.entries(d).map(([k,v])=>[k,{stringValue:String(v)}]))});
+return{doc:p=>({
+get:async()=>{const r=await fetch(B+p+'?'+K);if(r.status==404)return{exists:false,data:()=>undefined};if(!r.ok)throw er();const j=(await r.json()).fields||{},o={};for(const k in j)o[k]=j[k].stringValue;const v=pg(p)?JSON.parse(o.j||'{}'):o;return{exists:true,data:()=>v}},
+set:async d=>{const r=await fetch(B+p+'?'+K,{method:'PATCH',headers:H,body:bd(pg(p)?{j:JSON.stringify(d)}:d)});if(!r.ok)throw er()},
+create:async d=>{const [c,id]=p.split('/'),r=await fetch(B+c+'?documentId='+id+'&'+K,{method:'POST',headers:H,body:bd(d)});if(r.status==409)return false;if(!r.ok)throw er();return true}})}}
+(async()=>{let d=null;try{d=await claude.use('db')}catch(e){}if(!d&&CFG.projectId&&CFG.apiKey)d=mkFB();DB=d;if(DB&&U)pull()})();
 function ek(u){return'u'+[...new TextEncoder().encode(u.toLowerCase())].map(b=>b.toString(16).padStart(2,'0')).join('')}
 function push(){if(!U||!DB)return;clearTimeout(pt);const k=ek(U);pt=setTimeout(()=>{if(U&&DB&&ek(U)==k)DB.doc('progress/'+k).set(JSON.parse(JSON.stringify(S))).catch(()=>{})},700)}
 async function pull(){try{const d=await DB.doc('progress/'+ek(U)).get();if(d.exists){S=Object.assign(blank(),d.data());try{localStorage.setItem(sk(),JSON.stringify(S))}catch(e){}daily();head();if(!G)go(tab)}}catch(e){}}
@@ -211,13 +220,13 @@ async function authGo(){const u=$('au').value.trim(),p=$('ap').value,e=t=>{$('ae
 if(!/^[\wа-яё.-]{3,20}$/i.test(u))return e('Логин: 3–20 символов, буквы, цифры, точка, дефис');
 if(p.length<6)return e('Пароль не короче 6 символов');
 if(!window.crypto||!crypto.subtle)return e('Браузер не поддерживает безопасный вход');
-if(!DB)return e('Облачный вход недоступен. Открой страницу по ссылке в приложении Claude и войди в свой аккаунт Claude.');
+if(!DB)return e('Облачный вход недоступен: не подключена база (Firebase) или нет связи.');
 e('Подожди секунду…');
 try{const acc=DB.doc('accounts/'+key);
 if(am=='up'){if(p!=$('ap2').value)return e('Пароли не совпадают');
-const l=await acc.acquire({holder:crypto.randomUUID?crypto.randomUUID():String(Math.random()),ttlMs:5000});if(!l.acquired)return e('Логин занят');
-const sn=await acc.get();if(sn.exists&&sn.data().h)return e('Логин «'+u+'» уже занят, придумай другой');
-const sl=[...crypto.getRandomValues(new Uint8Array(16))].join('-');await acc.set({n:u,s:sl,h:await hx(p,sl)});
+const sl=[...crypto.getRandomValues(new Uint8Array(16))].join('-'),rec={n:u,s:sl,h:await hx(p,sl)},tk=()=>e('Логин «'+u+'» уже занят, придумай другой');
+if(acc.create){if(!await acc.create(rec))return tk()}
+else{const l=await acc.acquire({holder:crypto.randomUUID?crypto.randomUUID():String(Math.random()),ttlMs:5000});if(!l.acquired)return tk();const sn=await acc.get();if(sn.exists&&sn.data().h)return tk();await acc.set(rec)}
 await DB.doc('progress/'+key).set(JSON.parse(JSON.stringify(S)));U=u}
 else{const sn=await acc.get(),a=sn.exists&&sn.data();if(!a||!a.h||a.h!=await hx(p,a.s))return e('Неверный логин или пароль');
 const pd=await DB.doc('progress/'+key).get();U=a.n;S=Object.assign(blank(),pd.exists?pd.data():{})}
